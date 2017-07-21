@@ -11,6 +11,8 @@ int main(int argv, char **argc)
         return 1;
     }
 
+    mcp3008_read_ch();
+
     mcp3008_close();
 
     return 0;

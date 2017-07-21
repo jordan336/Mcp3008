@@ -12,6 +12,7 @@ typedef enum
 } MCP3008_RC;
 
 MCP3008_RC mcp3008_init(const char *bus);
+MCP3008_RC mcp3008_read_ch();
 MCP3008_RC mcp3008_close(void);
 
 #endif /* _MCP_3008_H */

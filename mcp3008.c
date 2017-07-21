@@ -16,7 +16,11 @@ MCP3008_RC mcp3008_init(const char *bus)
     {
         return MCP3008_FAILURE;
     }
+}
 
+/* TODO: pass in channel and single/differential */
+MCP3008_RC mcp3008_read_ch()
+{
     uint8_t tx[3];
     uint8_t rx[3];
 
