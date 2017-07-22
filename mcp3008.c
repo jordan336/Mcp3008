@@ -2,6 +2,9 @@
 
 #include "mcp3008.h"
 
+#define MCP3008_CONST_MAX_CHANNEL  0x7
+#define MCP3008_CONST_XFR_LEN      3
+
 static IO_SPA_SPI_PARAMS params = {0};
 
 MCP3008_RC mcp3008_init(const char *bus)
@@ -9,8 +12,6 @@ MCP3008_RC mcp3008_init(const char *bus)
     params.bus = bus;
     params.bits_per_word = 8;
     params.max_speed_hz = 100000; /* 100 KHz */
-    //params.clk_sample_falling_edge = false;
-    //params.clk_idle_high = false;
 
     if (io_spa_spi_init(&params))
     {
@@ -18,21 +19,29 @@ MCP3008_RC mcp3008_init(const char *bus)
     }
 }
 
-/* TODO: pass in channel and single/differential */
-MCP3008_RC mcp3008_read_ch()
+MCP3008_RC mcp3008_read_ch(uint8_t channel, bool differential, uint16_t *result)
 {
-    uint8_t tx[3];
-    uint8_t rx[3];
+    uint8_t tx[MCP3008_CONST_XFR_LEN];
+    uint8_t rx[MCP3008_CONST_XFR_LEN];
 
-    // start, single, CH0
-    tx[0] = 0x1;
-    tx[1] = 0x80;
-    tx[2] = 0x0;
+    if (channel > MCP3008_CONST_MAX_CHANNEL)
+    {
+        return MCP3008_FAILURE;
+    }
 
-    io_spa_spi_add_transfer(&params, rx, tx, 3, false, 0);
-    io_spa_spi_send_transfers(&params);
+    tx[0] = 0x1;   // start bit
+    tx[2] = 0x0;   // padding
+    tx[1] = (~differential) << 7; // bit 7 is single / differential
+    tx[1] |= (channel << 4);      // bits 4-6 are the channel
 
-    printf("0x%x 0x%x 0x%x\n", rx[2], rx[1], rx[0]);
+    if (io_spa_spi_add_transfer(&params, rx, tx, MCP3008_CONST_XFR_LEN, false, 0) != IO_SPA_OK ||
+        io_spa_spi_send_transfers(&params) != IO_SPA_OK)
+    {
+        return MCP3008_FAILURE;
+    }
+
+    rx[1] &= 0x03;  // only bits 0-1 are data
+    *result = ((uint16_t)rx[1] << 8) | rx[2];
 
     return MCP3008_OK;
 }
